@@ -1,0 +1,3 @@
+#!/bin/sh
+getent group _kea >/dev/null && adduser zabbix _kea
+systemctl restart zabbix-agent2

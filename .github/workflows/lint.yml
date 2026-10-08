@@ -1,0 +1,41 @@
+name: Lint
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SDK_REPO: https://git.zabbix.com/scm/ap/plugin-support.git
+  # Lint against the SDK of the stable protocol in release.yml.
+  SDK_BRANCH: release/6.4
+
+jobs:
+  golangci:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Fetch Zabbix plugin SDK (${{ env.SDK_BRANCH }})
+        run: git clone --depth 1 --branch "$SDK_BRANCH" "$SDK_REPO" "$RUNNER_TEMP/plugin-support"
+
+      - name: Link SDK
+        working-directory: src
+        run: |
+          go mod edit -replace "golang.zabbix.com/sdk=$RUNNER_TEMP/plugin-support"
+          go mod tidy
+
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.14.0
+          working-directory: src

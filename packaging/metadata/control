@@ -1,0 +1,7 @@
+Package: zabbix-agent2-plugin-keadhcp
+Version: %VERSION%
+Priority: optional
+Architecture: %ARCH%
+Depends: %DEPENDS%
+Maintainer: James Botting <james@pylonone.com>
+Description: Zabbix Agent2 plugin for monitoring Kea DHCP installations

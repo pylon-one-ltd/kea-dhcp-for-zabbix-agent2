@@ -1,0 +1,727 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    - uuid: c44efd0253f24958bc7846ba6b4ed0a9
+      template: 'Kea DHCP4 by Zabbix agent 2'
+      name: 'Kea DHCP4 by Zabbix agent 2'
+      description: 'Monitors ISC Kea DHCP4 server metrics and automatically discovers subnet CIDRs.'
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: e4dd113a8eef421eb707ada8f21017f7
+          name: 'Kea DHCP4: ACKs received'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_ack_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-ack-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: 9c4302020d3748c2bee65ea109ac6bb8
+          name: 'Kea DHCP4: ACKs sent'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_ack_sent
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-ack-sent"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: def89db6193c4d199b4d6252640df4c6
+          name: 'Kea DHCP4: Declines received'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_decline_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-decline-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+          triggers:
+            - uuid: d74fd13f27ad47b6b262d0b6b9669379
+              expression: 'rate(/Kea DHCP4 by Zabbix agent 2/kea.dhcp4.pkt4_decline_received,1h)>={$KEA.DHCP4.DECLINE_WARN}'
+              name: 'Abnormal amount of DHCP Declines within last hour'
+              opdata: 'Fails: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: |
+                An abnormal amount of DHCP declines has been received from client to the DHCP server within the last hour. This may indicate some odd network condition where clients are refusing leases from the server.
+                
+                This may also be normal depending on network design. Review the Kea logs and determine, alter {$KEA.DHCP4.DECLINE_WARN} if needed.
+              manual_close: 'YES'
+              tags:
+                - tag: component
+                  value: dhcp
+        - uuid: 9d5e800231ca4a97b0c5a0b72fe46511
+          name: 'Kea DHCP4: Discovers received'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_discover_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-discover-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: 956af5ffa16f48b29428faa93f793dff
+          name: 'Kea DHCP4: Inform received'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_inform_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-inform-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: bb204ff769f94edfa1eb01826845957f
+          name: 'Kea DHCP4: NAKs received'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_nak_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-nak-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: 7dd9ddb21e9e4049a87a68f5ce5ec323
+          name: 'Kea DHCP4: NAKs sent'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_nak_sent
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-nak-sent"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: f5ff104fe8c04985a953eb0247c24db5
+          name: 'Kea DHCP4: Offers received'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_offer_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-offer-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: 1317ff718e10469593b0a15166d57792
+          name: 'Kea DHCP4: Offers sent'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_offer_sent
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-offer-sent"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: e9d8d236b0c24bf5b39234516f907c65
+          name: 'Kea DHCP4: IPv4 packet parse failures'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_parse_failures
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-parse-failed"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: 64d15af896c042b391fb31d201b4dbbf
+          name: 'Kea DHCP4: IPv4 packets received'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: c5afd17b62534f9e933fd774e569c9c7
+          name: 'Kea DHCP4: Releases received'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_release_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-release-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: 66131fe4e8794904bae44f41e863e32b
+          name: 'Kea DHCP4: Requests dropped'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_request_dropped
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-receive-drop"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+          triggers:
+            - uuid: 4b3000e135c14e659096fc0f0302343a
+              expression: 'rate(/Kea DHCP4 by Zabbix agent 2/kea.dhcp4.pkt4_request_dropped,1h)>0'
+              name: 'IPv4 Request Drops present within last hour'
+              opdata: 'Fails: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'Kea has reported a number of inbound IPv4 packets being dropped. Review the logs to identify if this is expected behaviour.'
+              manual_close: 'YES'
+              tags:
+                - tag: component
+                  value: dhcp
+        - uuid: 4304e38c163f400cb101ad6484471dca
+          name: 'Kea DHCP4: Requests received'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_request_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-request-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: e9021fa9bf074ecf80fafef025c19d73
+          name: 'Kea DHCP4: IPv4 packets sent'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_sent
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-sent"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: 8755c053180d4de18564c14283dbe0a7
+          name: 'Kea DHCP4: Unknown requests received'
+          type: DEPENDENT
+          key: kea.dhcp4.pkt4_unknown_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt4-unknown-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: 1c3a3f6fbf4a4350ae547fdd93a4383f
+          name: 'Kea DHCP4: Allocation Fails'
+          type: DEPENDENT
+          key: kea.dhcp4.v4_allocation_fail
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["v4-allocation-fail"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          tags:
+            - tag: component
+              value: dhcp
+          triggers:
+            - uuid: 58e3fb2e3c1d48e9a4665d7d33333494
+              expression: 'rate(/Kea DHCP4 by Zabbix agent 2/kea.dhcp4.v4_allocation_fail,1h)>0'
+              name: 'IPv4 Allocation Fails present within last hour'
+              opdata: 'Fails: {ITEM.LASTVALUE1}'
+              priority: HIGH
+              description: |
+                Kea has reported that it was unable to allocate some addresses to clients. This may be because the client sent a request from a subnet that no pool is configured for, or a pool is full.
+                
+                Investigate if the request is legitimate, and if there is a configuration error or exhausted pool. If not, remove any dhcp relay from the network to prevent sending DHCP requests from a network this Kea server does not service.
+              manual_close: 'YES'
+              tags:
+                - tag: component
+                  value: dhcp
+        - uuid: 9d1d3ce800af4a528c4dd08b463f554e
+          name: 'Kea DHCP4: Subnets (Master)'
+          key: 'kea.subnets["{$KEA.DHCP4.SESSION}","dhcp4"]'
+          description: 'Configured subnets (ID, prefix, name), read by the plugin from config-get. The rest of the Kea configuration never leaves the agent.'
+          history: '0'
+          value_type: TEXT
+          trends: '0'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: d6ab4a83cace426692b8b08b8beed84d
+          name: 'Kea DHCP4: Get stats (Master)'
+          key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+          history: '0'
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  try {
+                      var data = JSON.parse(value);
+                      if (Array.isArray(data)) { data = data[0]; }
+                      return JSON.stringify(data.arguments || {});
+                  } catch (e) { return value; }
+          tags:
+            - tag: component
+              value: raw
+      discovery_rules:
+        - uuid: 8d6556e5beb049fa99468fc88819d647
+          name: 'Kea Subnet Discovery'
+          type: DEPENDENT
+          key: kea.dhcp4.subnet.discovery
+          delay: '0'
+          item_prototypes:
+            - uuid: d64183dd105947a6a11db9dcd5bb4666
+              name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}): Assigned addresses'
+              type: DEPENDENT
+              key: 'kea.dhcp4.subnet.assigned_addresses[{#SUBNET_ID}]'
+              delay: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$["subnet[{#SUBNET_ID}].assigned-addresses"][0][0]'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+              tags:
+                - tag: component
+                  value: dhcp
+                - tag: metric
+                  value: utilisation
+            - uuid: 2feb18c4eda34704a8dedb7216a0d081
+              name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}): Declined addresses'
+              type: DEPENDENT
+              key: 'kea.dhcp4.subnet.declined_addresses[{#SUBNET_ID}]'
+              delay: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$["subnet[{#SUBNET_ID}].declined-addresses"][0][0]'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+              tags:
+                - tag: component
+                  value: dhcp
+                - tag: metric
+                  value: abnormals
+            - uuid: 049718352eb04dd280a1abb67a0d63c9
+              name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}): Reclaimed declined addresses'
+              type: DEPENDENT
+              key: 'kea.dhcp4.subnet.reclaimed_declined_addresses[{#SUBNET_ID}]'
+              delay: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$["subnet[{#SUBNET_ID}].reclaimed-declined-addresses"][0][0]'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+              tags:
+                - tag: component
+                  value: dhcp
+                - tag: metric
+                  value: abnormals
+            - uuid: 780af8e97e8c4f109286e56aaf6939a9
+              name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}): Reclaimed leases'
+              type: DEPENDENT
+              key: 'kea.dhcp4.subnet.reclaimed_leases[{#SUBNET_ID}]'
+              delay: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$["subnet[{#SUBNET_ID}].reclaimed-leases"][0][0]'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+              tags:
+                - tag: component
+                  value: dhcp
+                - tag: metric
+                  value: abnormals
+            - uuid: 05b4cc19953746c191e60ee177dd54d3
+              name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}): Total addresses'
+              type: DEPENDENT
+              key: 'kea.dhcp4.subnet.total_addresses[{#SUBNET_ID}]'
+              delay: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$["subnet[{#SUBNET_ID}].total-addresses"][0][0]'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+              tags:
+                - tag: component
+                  value: dhcp
+                - tag: metric
+                  value: utilisation
+            - uuid: fabb10863b114d7caab1d118784ae274
+              name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}): Percent Utilised'
+              type: CALCULATED
+              key: 'kea.dhcp4.subnet.utilised[{#SUBNET_ID}]'
+              units: '%'
+              params: |
+                100 * (last(//kea.dhcp4.subnet.assigned_addresses[{#SUBNET_ID}]) +
+                last(//kea.dhcp4.subnet.declined_addresses[{#SUBNET_ID}])) /
+                last(//kea.dhcp4.subnet.total_addresses[{#SUBNET_ID}])
+              description: 'The utilisation percentage of the pool based on the total addresses and assigned addresses'
+              tags:
+                - tag: component
+                  value: dhcp
+                - tag: metric
+                  value: utilisation
+              trigger_prototypes:
+                - uuid: 05d62a9299bc4c739aff25b7512e1740
+                  expression: 'last(/Kea DHCP4 by Zabbix agent 2/kea.dhcp4.subnet.utilised[{#SUBNET_ID}])>{$KEA.DHCP4.UTILISATION_CRIT}'
+                  name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}) - Critical pool utilisation'
+                  opdata: 'Percent Utilised: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  description: 'The utilisation of the DHCP pool is at a critical level threshold'
+                  tags:
+                    - tag: component
+                      value: dhcp
+                    - tag: metric
+                      value: utilisation
+                - uuid: f1a4fe7410bb4388b3955928a4cf36a6
+                  expression: 'last(/Kea DHCP4 by Zabbix agent 2/kea.dhcp4.subnet.utilised[{#SUBNET_ID}])>{$KEA.DHCP4.UTILISATION_WARN}'
+                  name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}) - High pool utilisation'
+                  opdata: 'Percent Utilised: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'The utilisation of the DHCP pool is at a warning level threshold'
+                  dependencies:
+                    - name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}) - Critical pool utilisation'
+                      expression: 'last(/Kea DHCP4 by Zabbix agent 2/kea.dhcp4.subnet.utilised[{#SUBNET_ID}])>{$KEA.DHCP4.UTILISATION_CRIT}'
+                  tags:
+                    - tag: component
+                      value: dhcp
+                    - tag: metric
+                      value: utilisation
+            - uuid: 1bc6de3db19648ee8b345abfc6a2a92d
+              name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}): v4 Lease Reuses'
+              type: DEPENDENT
+              key: 'kea.dhcp4.subnet.v4_lease_reuses[{#SUBNET_ID}]'
+              delay: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$["subnet[{#SUBNET_ID}].v4-lease-reuses"][0][0]'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+              tags:
+                - tag: component
+                  value: dhcp
+                - tag: metric
+                  value: abnormals
+            - uuid: 7650450fb44643d8970e636cf0613f9b
+              name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}): v4 Reservation Conflicts'
+              type: DEPENDENT
+              key: 'kea.dhcp4.subnet.v4_reservation_conflicts[{#SUBNET_ID}]'
+              delay: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$["subnet[{#SUBNET_ID}].v4-reservation-conflicts"][0][0]'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'kea.stats["{$KEA.DHCP4.SESSION}","statistic-get-all","dhcp4"]'
+              tags:
+                - tag: component
+                  value: dhcp
+                - tag: metric
+                  value: utilisation
+          master_item:
+            key: 'kea.subnets["{$KEA.DHCP4.SESSION}","dhcp4"]'
+          lld_macro_paths:
+            - lld_macro: '{#SUBNET_ID}'
+              path: $.id
+            - lld_macro: '{#SUBNET_NAME}'
+              path: $.name
+      macros:
+        - macro: '{$KEA.DHCP4.DECLINE_WARN}'
+          value: '1'
+          description: 'Threshold to alert on abnormal amounts of DHCP Declines within 1 hour'
+        - macro: '{$KEA.DHCP4.SESSION}'
+          value: dhcp4
+          description: 'Name of the Kea session defined in the agent config (Plugins.KeaDHCP.Sessions.<name>.Uri).'
+        - macro: '{$KEA.DHCP4.UTILISATION_CRIT}'
+          value: '90'
+          description: 'Threshold to alert critical on DHCP pool utilisation'
+        - macro: '{$KEA.DHCP4.UTILISATION_WARN}'
+          value: '70'
+          description: 'Threshold to alert warning on DHCP pool utilisation'
+    - uuid: 8514fe238119463a84df9379071201b2
+      template: 'Kea DHCP6 by Zabbix agent 2'
+      name: 'Kea DHCP6 by Zabbix agent 2'
+      description: 'Monitors ISC Kea DHCP6 server metrics and automatically discovers subnet CIDRs.'
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: c531bb1cb8924888975e680043f2cebf
+          name: 'Kea DHCP6: Advertises sent'
+          type: DEPENDENT
+          key: kea.dhcp6.pkt6_advertise_sent
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt6-advertise-sent"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP6.SESSION}","statistic-get-all","dhcp6"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: 2fbf23a5be60465bb8eda9a7681f4ad6
+          name: 'Kea DHCP6: Packets received'
+          type: DEPENDENT
+          key: kea.dhcp6.pkt6_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt6-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP6.SESSION}","statistic-get-all","dhcp6"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: db107800c87f44dd96583a1ee7c5d03d
+          name: 'Kea DHCP6: Replies sent'
+          type: DEPENDENT
+          key: kea.dhcp6.pkt6_reply_sent
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt6-reply-sent"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP6.SESSION}","statistic-get-all","dhcp6"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: 1bf66d58f54c428ab6f3d916784c2973
+          name: 'Kea DHCP6: Requests received'
+          type: DEPENDENT
+          key: kea.dhcp6.pkt6_request_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt6-request-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP6.SESSION}","statistic-get-all","dhcp6"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: 3fd0583f937d44089e340a2ff46e6bfa
+          name: 'Kea DHCP6: Solicits received'
+          type: DEPENDENT
+          key: kea.dhcp6.pkt6_solicit_received
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$["pkt6-solicit-received"][0][0]'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'kea.stats["{$KEA.DHCP6.SESSION}","statistic-get-all","dhcp6"]'
+          tags:
+            - tag: component
+              value: dhcp
+        - uuid: 0e6c6df6105445e890c23516c30066aa
+          name: 'Kea DHCP6: Subnets (Master)'
+          key: 'kea.subnets["{$KEA.DHCP6.SESSION}","dhcp6"]'
+          description: 'Configured subnets (ID, prefix, name), read by the plugin from config-get. The rest of the Kea configuration never leaves the agent.'
+          history: '0'
+          value_type: TEXT
+          trends: '0'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: af95decc9e134284b06ca88b6cb7fc42
+          name: 'Kea DHCP6: Get stats (Master)'
+          key: 'kea.stats["{$KEA.DHCP6.SESSION}","statistic-get-all","dhcp6"]'
+          history: '0'
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  try {
+                      var data = JSON.parse(value);
+                      if (Array.isArray(data)) { data = data[0]; }
+                      return JSON.stringify(data.arguments || {});
+                  } catch (e) { return value; }
+          tags:
+            - tag: component
+              value: raw
+      discovery_rules:
+        - uuid: bbf347600d504740bab5f53975b266b3
+          name: 'Kea Subnet Discovery'
+          type: DEPENDENT
+          key: kea.dhcp6.subnet.discovery
+          delay: '0'
+          item_prototypes:
+            - uuid: 90f17663af034437a1d6650a51f274d5
+              name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}): Assigned NAs'
+              type: DEPENDENT
+              key: 'kea.dhcp6.subnet.assigned_nas[{#SUBNET_ID}]'
+              delay: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$["subnet[{#SUBNET_ID}].assigned-nas"][0][0]'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'kea.stats["{$KEA.DHCP6.SESSION}","statistic-get-all","dhcp6"]'
+              tags:
+                - tag: component
+                  value: dhcp
+            - uuid: 04b9c4c622fe464294901fe81a25998c
+              name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}): Assigned PDs'
+              type: DEPENDENT
+              key: 'kea.dhcp6.subnet.assigned_pds[{#SUBNET_ID}]'
+              delay: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$["subnet[{#SUBNET_ID}].assigned-pds"][0][0]'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'kea.stats["{$KEA.DHCP6.SESSION}","statistic-get-all","dhcp6"]'
+              tags:
+                - tag: component
+                  value: dhcp
+            - uuid: 1707e66c25da4bfdaacbb8956a67158b
+              name: 'Subnet {#SUBNET_ID} ({#SUBNET_NAME}): Total NAs'
+              type: DEPENDENT
+              key: 'kea.dhcp6.subnet.total_nas[{#SUBNET_ID}]'
+              delay: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$["subnet[{#SUBNET_ID}].total-nas"][0][0]'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'kea.stats["{$KEA.DHCP6.SESSION}","statistic-get-all","dhcp6"]'
+              tags:
+                - tag: component
+                  value: dhcp
+          master_item:
+            key: 'kea.subnets["{$KEA.DHCP6.SESSION}","dhcp6"]'
+          lld_macro_paths:
+            - lld_macro: '{#SUBNET_ID}'
+              path: $.id
+            - lld_macro: '{#SUBNET_NAME}'
+              path: $.name
+      macros:
+        - macro: '{$KEA.DHCP6.SESSION}'
+          value: dhcp6
+          description: 'Name of the Kea session defined in the agent config (Plugins.KeaDHCP.Sessions.<name>.Uri).'

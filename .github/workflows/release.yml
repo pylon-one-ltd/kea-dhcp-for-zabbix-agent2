@@ -1,0 +1,271 @@
+name: Test and Build plugin
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SDK_REPO: https://git.zabbix.com/scm/ap/plugin-support.git
+
+jobs:
+  protocols:
+    name: Protocol list
+    runs-on: ubuntu-latest
+    outputs:
+      list: ${{ steps.list.outputs.list }}
+      stable: ${{ steps.list.outputs.stable }}
+    steps:
+      - id: list
+        run: |
+          # The only list to edit when adding or dropping a protocol. The build
+          # and debian jobs both take their matrix from it.
+          #
+          # protocol: expected plugin protocol major.minor (checked against the SDK)
+          # sdk:      plugin-support branch that speaks it
+          # depends:  zabbix-agent2 dependency of the Debian package
+          # stable:   exactly one entry is true; its packages are also published as
+          #           zabbix-agent2-plugin-kea-linux-<arch>.deb for the README's
+          #           releases/latest/download URL
+          list='[
+            {"protocol": "6.4", "sdk": "release/6.4", "depends": "zabbix-agent2 (>= 1:6.4)", "stable": true},
+            {"protocol": "6.0", "sdk": "release/6.0", "depends": "zabbix-agent2 (>= 1:6.0), zabbix-agent2 (<< 1:6.4)", "stable": false}
+          ]'
+          stable="$(jq -r '[.[] | select(.stable) | .protocol] | if length == 1 then .[0] else empty end' <<<"$list")"
+          if [[ -z "$stable" ]]; then
+            echo "::error::exactly one protocol must have stable: true"
+            exit 1
+          fi
+          echo "list=$(jq -c . <<<"$list")" >> "$GITHUB_OUTPUT"
+          echo "stable=$stable" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Plugin protocol ${{ matrix.target.protocol }}.x
+    needs: protocols
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # One build per plugin communication protocol, not per agent version.
+        # `zabbix_agent2 --version` prints the protocol an agent speaks; for
+        # example agent 7.4 still uses protocol 6.4.0. The list itself is in
+        # the protocols job above.
+        target: ${{ fromJSON(needs.protocols.outputs.list) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Fetch Zabbix plugin SDK (${{ matrix.target.sdk }})
+        run: git clone --depth 1 --branch "${{ matrix.target.sdk }}" "$SDK_REPO" "$RUNNER_TEMP/plugin-support"
+
+      - name: Read SDK protocol version
+        id: sdk
+        working-directory: ${{ runner.temp }}/plugin-support
+        run: |
+          # Fail rather than publish a binary labelled with the wrong protocol.
+          version="$(sed -nE 's/^const (ProtocolVersion|Version)[[:space:]]*=[[:space:]]*"([^"]+)".*/\2/p' plugin/comms/protocol.go | head -n 1)"
+          expected="${{ matrix.target.protocol }}"
+          if [[ "$version" != "$expected" && "$version" != "$expected".* ]]; then
+            echo "::error::${{ matrix.target.sdk }} speaks plugin protocol '${version}', expected ${expected}.x"
+            grep -n 'Version' plugin/comms/protocol.go
+            exit 1
+          fi
+          echo "${{ matrix.target.sdk }} speaks plugin protocol $version"
+          echo "protocol=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Normalise SDK module path
+        working-directory: ${{ runner.temp }}/plugin-support
+        run: |
+          # Older SDK branches use the module path git.zabbix.com/ap/plugin-support.
+          # Rename it to golang.zabbix.com/sdk so the same plugin source builds against both.
+          if grep -q '^module git.zabbix.com/ap/plugin-support' go.mod; then
+            sed -i 's#^module .*#module golang.zabbix.com/sdk#' go.mod
+            grep -rl --include='*.go' 'git.zabbix.com/ap/plugin-support' . | xargs -r sed -i 's#git.zabbix.com/ap/plugin-support#golang.zabbix.com/sdk#g'
+          fi
+
+      - name: Link SDK
+        working-directory: src
+        run: |
+          go mod edit -replace "golang.zabbix.com/sdk=$RUNNER_TEMP/plugin-support"
+          go mod tidy
+
+      - name: Vet
+        working-directory: src
+        run: go vet ./...
+
+      - name: Test
+        working-directory: src
+        run: go test -race ./...
+
+      - name: Build
+        working-directory: src
+        env:
+          CGO_ENABLED: '0'
+          GOOS: linux
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF_NAME}"
+          else
+            version="$(git rev-parse --short HEAD)"
+          fi
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          for arch in amd64 arm64; do
+            GOARCH="$arch" go build -trimpath -ldflags "-s -w" \
+              -o "$GITHUB_WORKSPACE/dist/zabbix-kea-plugin-${version}-protocol${{ steps.sdk.outputs.protocol }}-linux-${arch}" .
+          done
+          ls -l "$GITHUB_WORKSPACE/dist"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zabbix-kea-plugin-protocol${{ steps.sdk.outputs.protocol }}
+          path: dist/*
+          if-no-files-found: error
+
+  debian:
+    name: Debian package ${{ matrix.target.protocol }}.x ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    needs: [protocols, build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      matrix:
+        target: ${{ fromJSON(needs.protocols.outputs.list) }}
+        arch: [amd64, arm64]
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/download-artifact@v4
+      with:
+        path: dist
+        pattern: zabbix-kea-plugin-protocol${{ matrix.target.protocol }}.*
+        merge-multiple: true
+
+    - name: Set package variables
+      run: |
+        if [[ "$GITHUB_REF" == refs/tags/v* ]]; then label="$GITHUB_REF_NAME"; version="${GITHUB_REF_NAME#v}"; else label="$(git rev-parse --short HEAD)"; version="0.0.0~git${label}"; fi
+        binary="$(ls dist/zabbix-kea-plugin-${label}-protocol${{ matrix.target.protocol }}.*-linux-${{ matrix.arch }})"
+        protocol="${binary#*-protocol}"; protocol="${protocol%-linux-*}"
+        echo "version=${version}" >> "$GITHUB_ENV"
+        echo "label=${label}" >> "$GITHUB_ENV"
+        echo "arch=${{ matrix.arch }}" >> "$GITHUB_ENV"
+        echo "protocol=${protocol}" >> "$GITHUB_ENV"
+        echo "binary=${binary}" >> "$GITHUB_ENV"
+
+    - name: Ensure clean package-source
+      run: >
+        rm -rf package-source && 
+        mkdir package-source
+
+    - name: Create directories
+      working-directory: package-source
+      run: >
+        mkdir -p etc/zabbix/zabbix_agent2.d/plugins.d &&
+        mkdir -p usr/libexec/zabbix &&
+        mkdir -p usr/share/doc/zabbix-agent2-plugin-keadhcp
+
+    - name: Copy files
+      working-directory: package-source
+      run: >
+        cp ../packaging/files/keadhcp.conf etc/zabbix/zabbix_agent2.d/plugins.d/keadhcp.conf &&
+        cp ../README.md usr/share/doc/zabbix-agent2-plugin-keadhcp/README.md &&
+        cp ../LICENSE usr/share/doc/zabbix-agent2-plugin-keadhcp/LICENSE &&
+        cp ../CHANGELOG.md usr/share/doc/zabbix-agent2-plugin-keadhcp/changelog &&
+        cp ../${binary} usr/libexec/zabbix/zabbix-agent2-plugin-keadhcp
+
+    - name: Copy metadata
+      working-directory: package-source
+      run: cp -r ../packaging/metadata DEBIAN
+
+    - name: Fix permissions
+      working-directory: package-source
+      run: >
+        chmod 0755 DEBIAN/postinst &&
+        chmod 0755 usr/libexec/zabbix/zabbix-agent2-plugin-keadhcp
+
+    - name: Update the package metadata
+      working-directory: package-source
+      run: >
+        sed -i "s/\%VERSION\%/${version}/" "DEBIAN/control" &&
+        sed -i "s/\%ARCH\%/${arch}/" "DEBIAN/control" &&
+        sed -i "s/\%DEPENDS\%/${{ matrix.target.depends }}/" "DEBIAN/control"
+
+    - name: Build package
+      run: dpkg-deb --root-owner-group --build package-source zabbix-agent2-plugin-kea-${label}-protocol${protocol}-linux-${arch}.deb
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: zabbix-agent2-plugin-kea-protocol${{ matrix.target.protocol }}-${{ matrix.arch }}
+        path: zabbix-agent2-plugin-kea-${{ env.label }}-protocol${{ env.protocol }}-linux-${{ env.arch }}.deb
+        if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: [protocols, debian]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract release notes from CHANGELOG.md
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          # The version's section may be added after the tag was created, so look
+          # in the default branch's CHANGELOG.md first, then the tagged commit's.
+          git fetch --depth=1 origin "$DEFAULT_BRANCH"
+          git show FETCH_HEAD:CHANGELOG.md > "$RUNNER_TEMP/CHANGELOG.$DEFAULT_BRANCH.md"
+          if bash .github/scripts/changelog-section.sh "$GITHUB_REF_NAME" "$RUNNER_TEMP/CHANGELOG.$DEFAULT_BRANCH.md" > "$RUNNER_TEMP/notes.md"; then
+            echo "Release notes taken from $DEFAULT_BRANCH"
+          else
+            bash .github/scripts/changelog-section.sh "$GITHUB_REF_NAME" CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+            echo "Release notes taken from the tagged commit"
+          fi
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Add stable package names
+        working-directory: dist
+        env:
+          STABLE: ${{ needs.protocols.outputs.stable }}
+        run: |
+          # The README installs with a fixed URL:
+          #   https://github.com/<repo>/releases/latest/download/zabbix-agent2-plugin-kea-linux-<arch>.deb
+          # GitHub redirects releases/latest/download/<name> to the newest
+          # release's asset of that name, so each release carries a copy of the
+          # stable protocol's package (stable: true in the protocols job) under a
+          # name without the version or protocol in it.
+          for arch in amd64 arm64; do
+            src="$(ls zabbix-agent2-plugin-kea-${GITHUB_REF_NAME}-protocol${STABLE}.*-linux-${arch}.deb)"
+            if [[ "$(echo "$src" | wc -l)" -ne 1 ]]; then
+              echo "::error::expected one protocol ${STABLE} ${arch} package, found: ${src:-none}"
+              exit 1
+            fi
+            cp "$src" "zabbix-agent2-plugin-kea-linux-${arch}.deb"
+          done
+          ls -l
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum zabbix-kea-plugin-* zabbix-agent2-plugin-kea-* > SHA256SUMS
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            --verify-tag
